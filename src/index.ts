@@ -11,7 +11,7 @@ const commands = new CommandHandler(CHANNELS);
 const client = new TMI.client({
 	connection: {reconnect: true},
 	identity: {
-		username: "" // username of the bot,
+		username: "", // username of the bot
 		password: "" // oauth token of the bot
 	},
 	channels: CHANNELS
