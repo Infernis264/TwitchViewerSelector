@@ -1,8 +1,10 @@
 # SimpleQueueBot
 ---
-Creates a simple queue that can be interacted with using 4 commands:
+Creates a simple queue that can be interacted with using 6 commands:
 
+---
 
+###User commands
 
 !join - joins the queue
 
@@ -10,4 +12,12 @@ Creates a simple queue that can be interacted with using 4 commands:
 
 !queue - displays all users in the queue
 
-!draw - (can only be used by mods and priveleged users) draws a random person from the queue
+---
+
+### Mod commands
+
+!draw - draws a random person from the queue
+
+!startqueue - allows regular users to use queue commands
+
+!stopqueue - disallows queue commands so chat will not get spammed with commands when the queue isn't open
