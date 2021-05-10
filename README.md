@@ -1,6 +1,6 @@
 # SimpleQueueBot
 ---
-Creates a simple queue that can be interacted with using 6 commands:
+Creates a simple queue that can be interacted with using 7 commands:
 
 ---
 
@@ -21,3 +21,7 @@ Creates a simple queue that can be interacted with using 6 commands:
 !startqueue - allows regular users to use queue commands
 
 !stopqueue - disallows queue commands so chat will not get spammed with commands when the queue isn't open
+
+!remove - removes a person from queue (doesn't stop them from rejoining)
+
+(non-implemented) !ban - bans a person from queuing (probably won't implement unless people really start behaving bad)
