@@ -4,7 +4,7 @@ Creates a simple queue that can be interacted with using 6 commands:
 
 ---
 
-###User commands
+## User commands
 
 !join - joins the queue
 
@@ -14,7 +14,7 @@ Creates a simple queue that can be interacted with using 6 commands:
 
 ---
 
-### Mod commands
+## Mod commands
 
 !draw - draws a random person from the queue
 
