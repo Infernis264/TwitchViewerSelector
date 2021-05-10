@@ -1,13 +1,8 @@
 import fetch from "node-fetch";
 import * as similarity from "similarity";
 
-
-interface ChannelList {
-	[key: string]: Channel
-}
-interface Channel {
-	superusers: string[],
-	chatters: string[]
+export interface ChannelList {
+	[key: string]: string[];
 }
 
 interface UserAPIResponse {
@@ -24,23 +19,22 @@ interface UserAPIResponse {
 	}
 }
 
-export default class UserTracker {
+export class UserTracker {
 
-	private static FETCH_INTERVAL = 60 * 1000;
+	private static FETCH_INTERVAL = 10 * 60 * 1000;
 	private static MIN_SIMILARITY = 0.7;
 	private channels: string[];
 	private channelList: ChannelList;
+	private expiry: (list: ChannelList) => void;
 
-	constructor(channels: string[]) {
+	constructor(channels: string[], expiry: (list: ChannelList)=>void) {
+		this.expiry = expiry;
 		this.channelList = {};
 		// filter out any non-alphanumeric characters from the channel name
 		this.channels = channels.map(c=>c.replace(/\W/g, ""));
 		// prepare the user list for population
 		channels.forEach(channel => {
-			this.channelList[channel] = {
-				superusers: [],
-				chatters: []
-			}
+			this.channelList[channel] = [];
 		});
 		this.populateLists();
 		setInterval(this.populateLists.bind(this), UserTracker.FETCH_INTERVAL);
@@ -50,21 +44,21 @@ export default class UserTracker {
 			try {
 				let request = await fetch(`https://tmi.twitch.tv/group/user/${this.channels[i]}/chatters`);
 				let data = (await request.json() as UserAPIResponse).chatters;
-				this.channelList[this.channels[i]] = {
-					superusers: [...data.broadcaster, ...data.moderators, ...data.staff, ...data.admins],
-					chatters: [...data.viewers, ...data.vips]
-				}
+				this.channelList[this.channels[i]] = [
+					...data.broadcaster, ...data.moderators, ...data.staff, ...data.admins, ...data.viewers, ...data.vips
+				]
 			} catch(e) {
 				console.log(e);
 			}
 		}
+		this.expiry(this.channelList);
 	}
 	/**
 	 * Returns the Channel object with the given name
 	 * @param channel the twitch channel whose users you are checking
 	 * @returns a Channel object
 	 */
-	public getUsers(channel: string): Channel {
+	public getUsers(channel: string): string[] {
 		return this.channelList[channel];
 	}
 
@@ -76,22 +70,11 @@ export default class UserTracker {
 	 * @returns true if the said user can be found in chat, false if the user can't be found
 	 */
 	public isUserInChat(channel: string, user: string, useFuzzy: boolean): (boolean | string) {
-		let allUsers = [...this.channelList[channel].chatters, ...this.channelList[channel].superusers];
 		if (useFuzzy) {
-			let match = this.findBestMatch(allUsers, user);
+			let match = this.findBestMatch(this.channelList[channel], user);
 			return match ? match : false;
 		}
-		return allUsers.includes(user);
-	}
-	
-	/**
-	 * Checks if the user has more permissions on a channel than a viewer
-	 * @param channel the channel the user is on
-	 * @param user the user whose permissions you are checking
-	 * @returns whether the user has elevated permissions or not (are they mod)
-	 */
-	public isSuperUser(channel: string, user: string): boolean {
-		return this.channelList[channel].superusers.includes(user);
+		return this.channelList[channel].includes(user);
 	}
 
 	/**
