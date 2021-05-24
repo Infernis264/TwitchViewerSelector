@@ -1,4 +1,5 @@
 import {ChatUserstate} from "tmi.js";
+import {randomBytes} from "crypto";
 
 interface QueueList {
 	[key: string]: User[];
@@ -25,7 +26,12 @@ export default class Queue {
 		if (this.getUserPos(channel, user.username) >= 0) {
 			return false;
 		}
-		this.queue[channel].push({name: user.username, display: user["display-name"], priority: user.subscriber});
+		this.queue[channel].push({
+			name: user.username,
+			display: user["display-name"],
+			// sometimes the user.badges object is null if the user doesn't have any badges
+			priority: user.badges ? "subscriber" in user.badges || "founder" in user.badges : false
+		});
 		return true;
 	}
 	public leave(channel: string, user: ChatUserstate): boolean {
@@ -110,9 +116,13 @@ class WeightedList {
 	}
 
 	public drawOne(): User {
-		let rand = Math.floor(Math.random() * this.list.length);
+		let rand = Math.floor(this.rand() * this.list.length);
 		let user = this.list.splice(rand, 1)[0];
 		return user;
+	}
+
+	private rand() {
+		return parseInt(randomBytes(4).toString("hex"), 16) / 0xffffffff;
 	}
 
 }
