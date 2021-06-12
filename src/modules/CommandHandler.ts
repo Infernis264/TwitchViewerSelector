@@ -69,9 +69,12 @@ export default class CommandHandler {
 				}
 			break;
 			case "stopqueue":
-				// adds the priority points to anyone who queued and didn't get drawn
+				// adds the priority points to anyone who queued and didn't get drawn if priority queuing is enabled
 				if (this.hasPermission(user)) {
-					await this.db.sortOutPriorities(channel, this.queue.getUnchosenViewers(channel), this.queue.getChosenViewers(channel));
+					let settings = await this.db.getChannelSettings(channel);
+					if (settings.usePriority) {
+						await this.db.sortOutPriorities(channel, this.queue.getUnchosenViewers(channel), this.queue.getChosenViewers(channel));
+					}
 				}
 			// the following code runs for both stopqueue and startqueue
 			case "startqueue":
