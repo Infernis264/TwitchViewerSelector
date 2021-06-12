@@ -1,6 +1,6 @@
-# SimpleQueueBot
+# Simple Queue Bot
 ---
-Creates a simple queue that can be interacted with using 7 commands:
+Creates a (now slightly complex) queue that can be interacted with using these commands:
 
 ---
 
