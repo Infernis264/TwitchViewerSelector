@@ -152,6 +152,6 @@ export default class PriorityDB {
 	 * @returns true if the document exists, false if the document doesn't exist
 	 */
 	public async userExists(twitchid: string, channel: string): Promise<boolean> {
-		return (await User.countDocuments({ channel: channel, twitchid: twitchid }).exec()) === 1;
+		return (await User.countDocuments({ channel: channel, twitchid: twitchid }).exec()) >= 1;
 	}
 }

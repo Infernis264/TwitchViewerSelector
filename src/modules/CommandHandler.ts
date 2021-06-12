@@ -35,9 +35,7 @@ export default class CommandHandler {
 		switch(command) {
 			case "join":
 			case "joinqueue":
-				console.log("joining");
 				if(!(await this.db.userExists(user["user-id"], channel))) {
-					console.log("user doesnt exist");
 					await this.db.createUser(user["user-id"], channel);
 				}
 				return this.queue.join(channel, user) ? 
