@@ -1,25 +1,8 @@
 import fetch from "node-fetch";
 import * as similarity from "similarity";
+import {UserAPIResponse, ChannelList} from "./Constants";
 
-export interface ChannelList {
-	[key: string]: string[];
-}
-
-interface UserAPIResponse {
-	_links: any;
-	chatter_count: number;
-	chatters: {
-		broadcaster: string[];
-		vips: string[];
-		moderators: string[];
-		staff: string[];
-		admins: string[];
-		global_mods: string[];
-		viewers: string[];
-	}
-}
-
-export class UserTracker {
+export default class UserTracker {
 
 	private static FETCH_INTERVAL = 10 * 60 * 1000;
 	private static MIN_SIMILARITY = 0.7;
@@ -67,14 +50,14 @@ export class UserTracker {
 	 * @param channel the channel to check the chat of
 	 * @param user the user you are searching for
 	 * @param useFuzzy whether or not to use fuzzy string similarity for matching usernames
-	 * @returns true if the said user can be found in chat, false if the user can't be found
+	 * @returns the found user as a string, null if not found
 	 */
-	public isUserInChat(channel: string, user: string, useFuzzy: boolean): (boolean | string) {
+	public isUserInChat(channel: string, user: string, useFuzzy: boolean): string {
 		if (useFuzzy) {
 			let match = this.findBestMatch(this.channelList[channel], user);
-			return match ? match : false;
+			return match ? match : null;
 		}
-		return this.channelList[channel].includes(user);
+		return this.channelList[channel].includes(user) ? user : null;
 	}
 
 	/**
@@ -84,7 +67,7 @@ export class UserTracker {
 	 * @param target the string that a similar or exact copy should be found in list
 	 * @returns the string in the list that best matches the target, or null if there isn't one
 	 */
-	private findBestMatch(list: string[], target: string): string {
+	public findBestMatch(list: string[], target: string): string {
 		let weights: number[] = []; 
 		for (let i = 0; i < list.length; i++) {
 			weights.push(similarity(list[i], target));

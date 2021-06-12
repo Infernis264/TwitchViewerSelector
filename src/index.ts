@@ -1,8 +1,9 @@
 import * as TMI from "tmi.js";
 import CommandHandler from "./modules/CommandHandler";
+import Auth from "./auth/Auth";
 
-// put the channels your bot is enabled on in this array
-const CHANNELS = [""];
+// put the channels the bot is enabled on
+const CHANNELS = Auth.CHANNELS;
 
 // the prefix that differentiates commands
 const PREFIX = "!"
@@ -11,16 +12,12 @@ const commands = new CommandHandler(CHANNELS);
 const client = new TMI.client({
 	connection: {reconnect: true},
 	identity: {
-		username: "", // username of the bot,
-		password: "" // oauth token of the bot
+		username: Auth.USERNAME,
+		password: Auth.TOKEN
 	},
-	channels: CHANNELS.slice() // slice is necessary otherwise tmi.js adds pound signs to the beginning of elements in the array
+	// slice is necessary otherwise tmi.js adds pound signs to the beginning of elements in the array
+	channels: CHANNELS.slice() 
 });
-
-// maybe consider removing the ratelimit because people get confused and
-// start spamming the chat more because they think the bot didn't register
-// their message.
-let ratelimit = false;
 
 client.on("message", async (channel: string, user: TMI.ChatUserstate, message: string) => {
 	let arg = message.split(" ")[1];
@@ -28,10 +25,8 @@ client.on("message", async (channel: string, user: TMI.ChatUserstate, message: s
 	if (command) {
 		if (CommandHandler.ENABLED.includes(command[0])) {
 			let message = await commands.handle(command[0], user, channel.replace(/\W/g, ""), arg);
-			if (message && (!ratelimit || commands.hasPermission(user))) {
+			if (message) {
 				client.say(channel, message.toString());
-				ratelimit = true;
-				setTimeout(()=>{ratelimit = false}, 1000);
 			}
 		}
 	}

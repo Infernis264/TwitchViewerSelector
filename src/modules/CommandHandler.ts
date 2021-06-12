@@ -1,19 +1,28 @@
 import * as TMI from "tmi.js";
-import {UserTracker, ChannelList} from "./UserTracker";
+import fetch from "node-fetch";
+import UserTracker from "./UserTracker";
 import Queue from "./Queue";
+import PriorityDB from "./PriorityDB";
+import {ChannelList} from "./Constants";
 
 export default class CommandHandler {
 
-	public static ENABLED = ["join", "leave", "queue", "draw", "startqueue", "stopqueue", "remove"];
+	public static ENABLED = ["join", "joinqueue", "leavequeue", "leave", "queue", "draw", "startqueue", "stopqueue", "remove", "usepriority", "useluck"];
 
 	private channels: string[];
 	private tracker: UserTracker;
 	private queue: Queue;
+	private db: PriorityDB;
 
 	constructor(channels: string[]) {
 		this.channels = channels;
-		this.tracker = new UserTracker(channels, this.cullUsers.bind(this));
-		this.queue = new Queue(channels);
+		// the tracker is broken for now
+		//this.tracker = new UserTracker(channels, this.cullUsers.bind(this));
+		this.db = new PriorityDB("mongodb://localhost:27017/priority")
+		this.queue = new Queue(channels, this.db);
+		for (let channel of channels) {
+			this.db.makeChannelExist(channel);
+		}
 	}
 
 	async handle(command: string, user: TMI.ChatUserstate, channel: string, param: string): Promise<string> {
@@ -22,15 +31,22 @@ export default class CommandHandler {
 				return 'You have to use the "startqueue" command if you want to be able to use queue commands';
 			} else return;
 		}
+		//console.log(this.queue.getUnchosenViewers(channel), this.queue.getChosenViewers(channel));
 		switch(command) {
-			// joins the queue if you aren't in it
 			case "join":
+			case "joinqueue":
+				console.log("joining");
+				if(!(await this.db.userExists(user["user-id"], channel))) {
+					console.log("user doesnt exist");
+					await this.db.createUser(user["user-id"], channel);
+				}
 				return this.queue.join(channel, user) ? 
 					`@${user["display-name"]} joined the queue!` :
 					`@${user["display-name"]} is already in the queue`;
 			break;
 			// leaves the queue if you are in it
 			case "leave":
+			case "leavequeue":
 				return this.queue.leave(channel, user) ? 
 					`@${user["display-name"]} left the queue` :
 					null;
@@ -42,7 +58,7 @@ export default class CommandHandler {
 			// draws a random winner from the queue
 			case "draw":
 				if (this.hasPermission(user)) {
-					let winners = this.queue.selectRandom(channel, Number(param));
+					let winners = await this.queue.selectRandom(channel, Number(param));
 					if (winners) {
 						return `@${winners.map(u=>u.display).join(" and @")} ${winners.length > 1 ? "are" : "is"} next in line!`;
 					} else {
@@ -54,8 +70,13 @@ export default class CommandHandler {
 					}
 				}
 			break;
-			case "startqueue":
 			case "stopqueue":
+				// adds the priority points to anyone who queued and didn't get drawn
+				if (this.hasPermission(user)) {
+					await this.db.sortOutPriorities(channel, this.queue.getUnchosenViewers(channel), this.queue.getChosenViewers(channel));
+				}
+			// the following code runs for both stopqueue and startqueue
+			case "startqueue":
 				if (this.hasPermission(user)) {
 					let starting = command.includes("start");
 					this.queue.setState(channel, starting);
@@ -66,8 +87,26 @@ export default class CommandHandler {
 				if (this.hasPermission(user)) {
 					let success = this.queue.removeUser(channel, param);
 					return success ?
-						`@${user["display-name"]} was removed from the queue!` :
-						`Couldn't remove ${user["display-name"]} from the queue!`;
+						`@${param} was removed from the queue!` :
+						`Couldn't remove ${param} from the queue!`;
+				}
+			break;
+			case "usepriority":
+			case "useluck":
+				if (this.isBroadcaster(user)) {
+					let priority = command.includes("priority");
+					this.db.setChannelSettings(channel, priority);
+					return `Changed queue type to ${priority ? "point priority queuing" : "subscriber luck"}!`;
+				} else if (this.hasPermission(user)) {
+					return "Sorry, but only the broadcaster can change the queue type";
+				}
+			break;
+			case "pp":
+				let bal = await this.db.getUserPriority(user["user-id"], channel);
+				if (bal > 0) {
+					return `You have ${bal} priority points`;
+				} else {
+					return `You have no priority points`;
 				}
 			break;
 		}
@@ -81,6 +120,9 @@ export default class CommandHandler {
 	public hasPermission(user: TMI.ChatUserstate): boolean {
 		if (!user["badges-raw"]) user["badges-raw"] = "";
 		return user.mod || user["badges-raw"].includes("broadcaster");
+	}
+	public isBroadcaster(user: TMI.ChatUserstate): boolean {
+		return user["badges-raw"].includes("broadcaster");
 	}
 
 	/**
