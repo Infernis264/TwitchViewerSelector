@@ -16,8 +16,7 @@ export default class CommandHandler {
 
 	constructor(channels: string[]) {
 		this.channels = channels;
-		// the tracker is broken for now
-		//this.tracker = new UserTracker(channels, this.cullUsers.bind(this));
+		this.tracker = new UserTracker(channels, this.cullUsers.bind(this));
 		this.db = new PriorityDB("mongodb://localhost:27017/priority")
 		this.queue = new Queue(channels, this.db);
 		for (let channel of channels) {
@@ -31,7 +30,7 @@ export default class CommandHandler {
 				return 'You have to use the "startqueue" command if you want to be able to use queue commands';
 			} else return;
 		}
-		//console.log(this.queue.getUnchosenViewers(channel), this.queue.getChosenViewers(channel));
+		
 		switch(command) {
 			case "join":
 			case "joinqueue":
@@ -58,7 +57,7 @@ export default class CommandHandler {
 				if (this.hasPermission(user)) {
 					let winners = await this.queue.selectRandom(channel, Number(param));
 					if (winners) {
-						return `@${winners.map(u=>u.display).join(" and @")} ${winners.length > 1 ? "are" : "is"} next in line!`;
+						return `@${winners.map(u=>u.user).join(" and @")} ${winners.length > 1 ? "are" : "is"} next in line!`;
 					} else {
 						return Number(param) ? 
 							`${param} chatter${Number(param) > 1 ? "s" : ""} is too many to draw from the queue` :

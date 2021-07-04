@@ -11,7 +11,7 @@ export interface QueueList {
 	[key: string]: QueueUser[];
 }
 export interface QueueUser {
-	display: string;
+	user: string;
 	twitchid: string;
 	priority: boolean;
 }

@@ -51,7 +51,7 @@ export default class Queue {
 		}
 		this.queue[channel].push({
 			twitchid: user["user-id"],
-			display: user["display-name"],
+			user: user.username,
 			// sometimes the user.badges object is null if the user doesn't have any badges
 			priority: user.badges ? "subscriber" in user.badges || "founder" in user.badges : false
 		});
@@ -121,11 +121,10 @@ export default class Queue {
 	 */
 	public removeNotInList(channel: string, list: string[]) {
 		for (let i = 0; i < this.queue[channel].length; i++) {
-			if (!list.includes(this.queue[channel][i].twitchid)) {
-				this.queue[channel][i] = null;
+			if (!list.includes(this.queue[channel][i].user)) {
+				this.queue[channel].splice(i, 1);
 			}
 		}
-		this.queue[channel] = this.queue[channel].filter(n => n !== null);
 	}
 	
 	/**
@@ -175,10 +174,10 @@ export default class Queue {
 		return false;
 	}
 
-
 	public getUnchosenViewers(channel: string): string[] {
 		return this.queued[channel];
 	}
+
 	public getChosenViewers(channel: string): string[] {
 		return this.drawn[channel];
 	}
@@ -192,7 +191,7 @@ export default class Queue {
 		if (this.queue[channel].length === 0) {
 			return "Queue is empty!";
 		}
-		return `Queue (${this.queue[channel].length}): ${this.queue[channel].map(u=>u.display).join(" ")}`;
+		return `Queue (${this.queue[channel].length}): ${this.queue[channel].map(u=>u.user).join(" ")}`;
 	}
 }
 
