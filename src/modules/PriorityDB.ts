@@ -43,7 +43,7 @@ export default class PriorityDB {
 		if (!exists) {
 			(new ChannelSettings({
 				channel: channel,
-				method: false
+				method: "random"
 			})).save();
 		}
 	}

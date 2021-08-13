@@ -7,6 +7,7 @@ import {ChannelList} from "./Constants";
 export default class CommandHandler {
 
 	public static ENABLED = ["join", "joinqueue", "leavequeue", "leave", "queue", "draw", "startqueue", "stopqueue", "remove", "use"];
+	public static EXEMPT = ["use", "startqueue"]
 
 	private channels: string[];
 	private tracker: UserTracker;
@@ -24,7 +25,7 @@ export default class CommandHandler {
 	}
 
 	async handle(command: string, user: TMI.ChatUserstate, channel: string, param: string): Promise<string> {
-		if (!this.queue.isActive(channel) && command !== "startqueue") {
+		if (!this.queue.isActive(channel) && !CommandHandler.EXEMPT.includes(command)) {
 			if (this.hasPermission(user)) {
 				return 'You have to use the "startqueue" command if you want to be able to use queue commands';
 			} else return;
@@ -92,7 +93,7 @@ export default class CommandHandler {
 			break;
 			case "use":
 				if (this.isBroadcaster(user)) {
-					param = param.toLowerCase();
+					param = param ? param.toLowerCase() : param;
 					switch(param) {
 						case "priority":
 						case "random":
@@ -127,6 +128,7 @@ export default class CommandHandler {
 		return user.mod || user["badges-raw"].includes("broadcaster");
 	}
 	public isBroadcaster(user: TMI.ChatUserstate): boolean {
+		return true;
 		return user["badges-raw"].includes("broadcaster");
 	}
 
