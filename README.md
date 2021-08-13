@@ -40,6 +40,7 @@ When a user is drawn from the queue, **their priority points are reset to 0 if t
   
 
 ### Broadcaster only commands:
-`!usepriority` - switches to the priority point system for queuing
-
-`!useluck` - switches to the original sub-weighted random queuing. Priority points will **NOT** be awarded in this mode
+`!use [queue type]` - switches to the specified system for queuing. The three types are as follows:
+1) `priority` - Uses accumulated priority points to weight a queue in favor of those that are drawn less frequently between separate opening and closing of queues
+2) `random` - Selects users randomly with weight added to subscribers of the channel
+3) `order` - The simplest method, draws people in the order they entered queue
