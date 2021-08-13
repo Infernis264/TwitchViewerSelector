@@ -13,16 +13,22 @@ export default class RandomSelect {
 
 		let settings = await this.db.getChannelSettings(channel);
 
-		if (settings.usePriority) {
-			return await this.selectRandomWithPriorityQueue(list, settings.channel, num);
-		} else {
-			return await this.selectRandomWithSubLuck(list, num);
+		// creates a copy of the list so the original isn't modified
+		list = list.slice();
+
+		switch (settings.method) {
+			case "priority":
+				return await this.selectRandomWithPriorityQueue(list, channel, num);
+			case "random":
+				return await this.selectRandomWithSubLuck(list, num);
+			case "order":
+				return await this.selectInOrder(list, num);
+			default:
+				return null;
 		}
 	}
 
 	private async selectRandomWithPriorityQueue(list: QueueUser[], channel: string, num: number): Promise<QueueUser[]> {
-		list = list.slice();
-
 		let winners = [];
 		let weights = await this.db.getUsersInList(channel, list.map(n=>n.twitchid));
 
@@ -42,9 +48,6 @@ export default class RandomSelect {
 	}
 
 	private selectRandomWithSubLuck(list: QueueUser[], num?: number): QueueUser[] {
-		// creates a copy of the list so the original isn't modified
-		list = list.slice();
-
 		let winners = [];
 
 		for (let i = 0; i < num; i++) {
@@ -60,8 +63,8 @@ export default class RandomSelect {
 		return winners;
 	}
 
-	public addPriorityToUsers(list: QueueUser[]) {
-
+	private selectInOrder(list: QueueUser[], num?: number) {
+		return list.slice(0, num ? num : 1);		
 	}
 }
 

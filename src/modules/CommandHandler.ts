@@ -1,5 +1,4 @@
 import * as TMI from "tmi.js";
-import fetch from "node-fetch";
 import UserTracker from "./UserTracker";
 import Queue from "./Queue";
 import PriorityDB from "./PriorityDB";
@@ -7,7 +6,7 @@ import {ChannelList} from "./Constants";
 
 export default class CommandHandler {
 
-	public static ENABLED = ["join", "joinqueue", "leavequeue", "leave", "queue", "draw", "startqueue", "stopqueue", "remove", "usepriority", "useluck"];
+	public static ENABLED = ["join", "joinqueue", "leavequeue", "leave", "queue", "draw", "startqueue", "stopqueue", "remove", "use"];
 
 	private channels: string[];
 	private tracker: UserTracker;
@@ -55,12 +54,12 @@ export default class CommandHandler {
 			// draws a random winner from the queue
 			case "draw":
 				if (this.hasPermission(user)) {
-					let winners = await this.queue.selectRandom(channel, Number(param));
+					let winners = await this.queue.selectUsers(channel, parseInt(param));
 					if (winners) {
 						return `@${winners.map(u=>u.user).join(" and @")} ${winners.length > 1 ? "are" : "is"} next in line!`;
 					} else {
-						return Number(param) ? 
-							`${param} chatter${Number(param) > 1 ? "s" : ""} is too many to draw from the queue` :
+						return parseInt(param) ? 
+							`${param} chatter${parseInt(param) > 1 ? "s" : ""} is too many to draw from the queue` :
 							param === undefined ? 
 								`Queue is empty!` :
 								`${param} isn't a number!`;
@@ -71,7 +70,7 @@ export default class CommandHandler {
 				// adds the priority points to anyone who queued and didn't get drawn if priority queuing is enabled
 				if (this.hasPermission(user)) {
 					let settings = await this.db.getChannelSettings(channel);
-					if (settings.usePriority) {
+					if (settings.method === "priority") {
 						await this.db.sortOutPriorities(channel, this.queue.getUnchosenViewers(channel), this.queue.getChosenViewers(channel));
 					}
 				}
@@ -91,12 +90,18 @@ export default class CommandHandler {
 						`Couldn't remove ${param} from the queue!`;
 				}
 			break;
-			case "usepriority":
-			case "useluck":
+			case "use":
 				if (this.isBroadcaster(user)) {
-					let priority = command.includes("priority");
-					this.db.setChannelSettings(channel, priority);
-					return `Changed queue type to ${priority ? "point priority queuing" : "subscriber luck"}!`;
+					param = param.toLowerCase();
+					switch(param) {
+						case "priority":
+						case "random":
+						case "order":
+							this.db.setChannelSettings(channel, param);
+							return `Changed queue type to ${param} queuing!`;
+						default:
+							return `Invalid queuing type ${param}! Available queuing methods are "priority", "random", and "order"`;
+					}
 				} else if (this.hasPermission(user)) {
 					return "Sorry, but only the broadcaster can change the queue type";
 				}

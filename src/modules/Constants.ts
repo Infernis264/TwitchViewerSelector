@@ -5,7 +5,7 @@ export interface DBUser {
 }
 export interface ChannelSettingsType {
 	channel: string;
-	usePriority: boolean;
+	method: string;
 }
 export interface QueueList {
 	[key: string]: QueueUser[];
@@ -13,6 +13,7 @@ export interface QueueList {
 export interface QueueUser {
 	user: string;
 	twitchid: string;
+	// whether they are a sub or not
 	priority: boolean;
 }
 export interface AvailableChannel {

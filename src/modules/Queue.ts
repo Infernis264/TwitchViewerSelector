@@ -1,6 +1,6 @@
 import {ChatUserstate} from "tmi.js";
 import PriorityDB from "./PriorityDB";
-import RandomSelect from "./RandomSelect";
+import UserPicker from "./UserPicker";
 import {AvailableChannel, QueueUser, QueueList, UserList} from "./Constants";
 
 export default class Queue {
@@ -15,7 +15,7 @@ export default class Queue {
 
 	// this data structure needs to be changed but right now I dont have time
 	private available: AvailableChannel[];
-	private random: RandomSelect;
+	private picker: UserPicker;
 
 	/**
 	 * Makes a new instance of the queue class
@@ -36,7 +36,7 @@ export default class Queue {
 				active: false
 			});
 		}
-		this.random = new RandomSelect(db);
+		this.picker = new UserPicker(db);
 	}
 	
 	/**
@@ -78,15 +78,15 @@ export default class Queue {
 	}
 
 	/**
-	 * Where it all goes down. Users are put into a weighted list and drawn randomly.
+	 * Users are drawn according to the channel's specified method of drawing users
 	 * @param channel the channel the queue is for
 	 * @param num the number of users to draw from queue
 	 * @returns an array of chosen users who have won the drawing
 	 */
-	public async selectRandom(channel: string, num?: number): Promise<QueueUser[]> {
+	public async selectUsers(channel: string, num?: number): Promise<QueueUser[]> {
 		num = num > 0 ? num : 1;
 		if (num > this.queue[channel].length) return null;
-		let chosenOnes = await this.random.chooseNFrom(channel, this.queue[channel], num);
+		let chosenOnes = await this.picker.chooseNFrom(channel, this.queue[channel], num);
 		for(let winner of chosenOnes) {
 			let index = this.queue[channel].findIndex(u => (u.twitchid === winner.twitchid));
 			this.queue[channel].splice(index, 1);

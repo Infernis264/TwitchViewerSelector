@@ -10,7 +10,7 @@ const User = mongoose.model("User", new Schema({
 
 const ChannelSettings = mongoose.model("ChannelSettings", new Schema({
 	channel: String,
-	usePriority: Boolean
+	method: String
 }));
 
 export default class PriorityDB {
@@ -25,14 +25,14 @@ export default class PriorityDB {
 		mongoose.set("returnOriginal", false);
 	}
 
-	public async setChannelSettings(channel: string, state: boolean) {
+	public async setChannelSettings(channel: string, state: string) {
 		let exists = await this.channelExists(channel);
 		if (exists) {
-			await ChannelSettings.updateOne({channel: channel}, {usePriority: state}).exec();
+			await ChannelSettings.updateOne({channel: channel}, {method: state}).exec();
 		} else {
 			(new ChannelSettings({
 				channel: channel,
-				usePriority: state
+				method: state
 			})).save();
 		}
 		return state;
@@ -43,7 +43,7 @@ export default class PriorityDB {
 		if (!exists) {
 			(new ChannelSettings({
 				channel: channel,
-				usePriority: false
+				method: false
 			})).save();
 		}
 	}
