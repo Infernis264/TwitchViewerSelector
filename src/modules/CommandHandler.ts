@@ -128,7 +128,6 @@ export default class CommandHandler {
 		return user.mod || user["badges-raw"].includes("broadcaster");
 	}
 	public isBroadcaster(user: TMI.ChatUserstate): boolean {
-		return true;
 		return user["badges-raw"].includes("broadcaster");
 	}
 
