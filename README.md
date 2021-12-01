@@ -8,7 +8,7 @@ This is an IRC chatbot that stores a queue of viewers on a Twitch stream, and al
 
 ## How queue priority works
 
-The formerly sub-luck weighted random queue has been reworked in an effort to make drawing names more equitable for all viewers. The new method of queuing is opt-in and can be changed to the new one with the broadcaster only command `!usepriority` and to the old with `!useluck`.
+The formerly sub-luck weighted random queue has been reworked in an effort to make drawing names more equitable for all viewers. The new method of queuing is opt-in and can be changed to the new one with the broadcaster only command `!use priority` and to the old with `!use random`.
 
 In priority queuing mode, people earn priority points that give them a higher chance of being drawn from the queue. One priority point is equivalent to an extra entry into the queue, which in turn makes it more likely for a viewer to be drawn if they have more points. 
 
