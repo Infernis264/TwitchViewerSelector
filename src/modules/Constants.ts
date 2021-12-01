@@ -6,6 +6,7 @@ export interface DBUser {
 export interface ChannelSettingsType {
 	channel: string;
 	method: string;
+	prefix: string;
 }
 export interface QueueList {
 	[key: string]: QueueUser[];
@@ -37,3 +38,4 @@ export interface ChannelList {
 	[key: string]: string[];
 }
 export interface UserList extends ChannelList {}
+export type DrawType = "random" | "order" | "priority";

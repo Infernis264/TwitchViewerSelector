@@ -1,5 +1,5 @@
 import * as TMI from "tmi.js";
-import CommandHandler from "./modules/CommandHandler";
+import CommandHandler, {Command} from "./modules/CommandHandler";
 import Auth from "./auth/Auth";
 
 // put the channels the bot is enabled on
@@ -21,10 +21,11 @@ const client = new TMI.client({
 
 client.on("message", async (channel: string, user: TMI.ChatUserstate, message: string) => {
 	let arg = message.split(" ")[1];
-	let command = message.split(" ")[0].match(new RegExp(`(?<=${PREFIX}).+`));
+	let c = channel.replace(/\W/g, "");
+	let command = message.split(" ")[0].match(new RegExp(`(?<=${commands.getPrefix(c)}).+`));
 	if (command) {
-		if (CommandHandler.ENABLED.includes(command[0])) {
-			let message = await commands.handle(command[0], user, channel.replace(/\W/g, ""), arg);
+		if (CommandHandler.ENABLED.includes(command[0] as Command)) {
+			let message = await commands.handle(command[0], user, c, arg);
 			if (message) {
 				client.say(channel, message.toString());
 			}

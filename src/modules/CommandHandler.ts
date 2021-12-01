@@ -4,15 +4,32 @@ import Queue from "./Queue";
 import PriorityDB from "./PriorityDB";
 import {ChannelList} from "./Constants";
 
+export enum Command {
+	JOIN_QUEUE = "join",
+	LEAVE_QUEUE = "leave",
+	DRAW_USER = "draw",
+	CHECK_QUEUE = "pool",
+	OPEN_QUEUE = "open",
+	CLOSE_QUEUE = "close",
+	REMOVE_USER = "remove",
+	CHANGE_MODE = "use",
+	PRIORITY_CHECK = "pp",
+	CHANGE_PREFIX = "prefix"
+}
+
 export default class CommandHandler {
 
-	public static ENABLED = ["join", "joinqueue", "leavequeue", "leave", "queue", "draw", "startqueue", "stopqueue", "remove", "use"];
-	public static EXEMPT = ["use", "startqueue"]
+	public static ENABLED = ["join","leave","draw","pool","open","close","remove","use","pp","prefix"];
+	public static EXEMPT = [
+		Command.OPEN_QUEUE, Command.PRIORITY_CHECK, 
+		Command.CHANGE_MODE, Command.CHANGE_PREFIX
+	];
 
 	private channels: string[];
 	private tracker: UserTracker;
 	private queue: Queue;
 	private db: PriorityDB;
+	private prefixes: {[key:string]:string};
 
 	constructor(channels: string[]) {
 		this.channels = channels;
@@ -22,52 +39,52 @@ export default class CommandHandler {
 		for (let channel of channels) {
 			this.db.makeChannelExist(channel);
 		}
+		this.prefixes = {};
+		this.populatePrefixes();
 	}
 
 	async handle(command: string, user: TMI.ChatUserstate, channel: string, param: string): Promise<string> {
-		if (!this.queue.isActive(channel) && !CommandHandler.EXEMPT.includes(command)) {
+		if (!this.queue.isActive(channel) && !CommandHandler.EXEMPT.includes(command as Command)) {
 			if (this.hasPermission(user)) {
-				return 'You have to use the "startqueue" command if you want to be able to use queue commands';
+				return 'You have to use the "open" command if you want to be able to use pooler commands';
 			} else return;
 		}
 		
 		switch(command) {
-			case "join":
-			case "joinqueue":
+			case Command.JOIN_QUEUE:
 				if(!(await this.db.userExists(user["user-id"], channel))) {
 					await this.db.createUser(user["user-id"], channel);
 				}
 				return this.queue.join(channel, user) ? 
-					`@${user["display-name"]} joined the queue!` :
-					`@${user["display-name"]} is already in the queue`;
-			break;
-			// leaves the queue if you are in it
-			case "leave":
-			case "leavequeue":
+					`@${user["display-name"]} joined the pool!` :
+					`@${user["display-name"]} is already in the pool`;
+
+			// Leaves the queue if you are in it
+			case Command.LEAVE_QUEUE:
 				return this.queue.leave(channel, user) ? 
-					`@${user["display-name"]} left the queue` :
+					`@${user["display-name"]} left the pool` :
 					null;
-			break;
-			// logs the queue to the chat
-			case "queue":
+
+			// Logs the queue to the chat
+			case Command.CHECK_QUEUE:
 				return this.queue.toString(channel);
-			break;
-			// draws a random winner from the queue
-			case "draw":
+
+			// Draws a random winner from the queue
+			case Command.DRAW_USER:
 				if (this.hasPermission(user)) {
 					let winners = await this.queue.selectUsers(channel, parseInt(param));
 					if (winners) {
 						return `@${winners.map(u=>u.user).join(" and @")} ${winners.length > 1 ? "are" : "is"} next in line!`;
 					} else {
 						return parseInt(param) ? 
-							`${param} chatter${parseInt(param) > 1 ? "s" : ""} is too many to draw from the queue` :
+							`${param} chatter${parseInt(param) > 1 ? "s" : ""} is too many to draw from the pool` :
 							param === undefined ? 
-								`Queue is empty!` :
+								`Pool is empty!` :
 								`${param} isn't a number!`;
 					}
 				}
 			break;
-			case "stopqueue":
+			case Command.CLOSE_QUEUE:
 				// adds the priority points to anyone who queued and didn't get drawn if priority queuing is enabled
 				if (this.hasPermission(user)) {
 					let settings = await this.db.getChannelSettings(channel);
@@ -75,39 +92,37 @@ export default class CommandHandler {
 						await this.db.sortOutPriorities(channel, this.queue.getUnchosenViewers(channel), this.queue.getChosenViewers(channel));
 					}
 				}
-			// the following code runs for both stopqueue and startqueue
-			case "startqueue":
+			// the following code runs for both both closing and opening
+			case Command.OPEN_QUEUE:
 				if (this.hasPermission(user)) {
-					let starting = command.includes("start");
+					let starting = command === Command.OPEN_QUEUE;
 					this.queue.setState(channel, starting);
-					return `${starting ? "Starting" : "Stopping"} queue`;
+					return `${starting ? "Starting" : "Stopping"} pooling`;
 				}
 			break;
-			case "remove":
+			case Command.REMOVE_USER:
 				if (this.hasPermission(user)) {
-					let success = this.queue.removeUser(channel, param);
+					let success = this.queue.removeUser(channel, param.replace("@",""));
 					return success ?
-						`@${param} was removed from the queue!` :
-						`Couldn't remove ${param} from the queue!`;
+						`${param} was forcibly removed from the pool!` :
+						`Couldn't remove ${param} from the pool!`;
 				}
 			break;
-			case "use":
-				if (this.isBroadcaster(user)) {
+			case Command.CHANGE_MODE:
+				if (this.hasPermission(user)) {
 					param = param ? param.toLowerCase() : param;
 					switch(param) {
 						case "priority":
 						case "random":
 						case "order":
-							this.db.setChannelSettings(channel, param);
-							return `Changed queue type to ${param} queuing!`;
+							this.db.setDrawMethod(channel, param);
+							return `Changed drawing type to ${param}!`;
 						default:
-							return `Invalid queuing type ${param}! Available queuing methods are "priority", "random", and "order"`;
+							return `Invalid drawing type ${param}! Available methods are "priority", "random", and "order"`;
 					}
-				} else if (this.hasPermission(user)) {
-					return "Sorry, but only the broadcaster can change the queue type";
 				}
 			break;
-			case "pp":
+			case Command.PRIORITY_CHECK:
 				let bal = await this.db.getUserPriority(user["user-id"], channel);
 				if (bal > 0) {
 					return `You have ${bal} priority points`;
@@ -115,9 +130,16 @@ export default class CommandHandler {
 					return `You have no priority points`;
 				}
 			break;
+			case Command.CHANGE_PREFIX:
+				if (this.hasPermission(user)) {
+					await this.db.setPrefix(channel, param);
+					this.prefixes[channel] = await this.db.getPrefix(channel);
+					return `Changed prefix to "${this.prefixes[channel]}"`;
+				}
+			break;
 		}
 	}
-
+	
 	/**
 	 * Checks if a chat user has elevated permissions over a viewer
 	 * @param user the chat user whose permissions are being checked
@@ -139,5 +161,14 @@ export default class CommandHandler {
 		for (let channel of this.channels) {
 			this.queue.removeNotInList(channel, channelList[channel]);
 		}
+	}
+
+	private async populatePrefixes() {
+		this.channels.forEach(async channel => {
+			this.prefixes[channel] = await this.db.getPrefix(channel);
+		});
+	}
+	public getPrefix(channel: string) {
+		return this.prefixes[channel];
 	}
 }

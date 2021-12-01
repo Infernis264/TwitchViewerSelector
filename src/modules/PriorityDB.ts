@@ -1,6 +1,6 @@
 import { Document, Schema, LeanDocument } from "mongoose";
 import * as mongoose from "mongoose";
-import {ChannelSettingsType, DBUser} from "./Constants";
+import {ChannelSettingsType, DBUser, DrawType} from "./Constants";
 
 const User = mongoose.model("User", new Schema({
 	twitchid: String,
@@ -10,48 +10,66 @@ const User = mongoose.model("User", new Schema({
 
 const ChannelSettings = mongoose.model("ChannelSettings", new Schema({
 	channel: String,
-	method: String
+	method: String,
+	prefix: String
 }));
 
 export default class PriorityDB {
 
 	public static PRIORITY_WEIGHT = 3;
+	public db: typeof mongoose;
+
 	/**
 	 * Creates a new PriorityDB with a provided mongodb url
 	 * @param url the database url
 	 */
 	constructor(url: string) {
-		mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false });
+		mongoose.connect(url);
 		mongoose.set("returnOriginal", false);
 	}
 
-	public async setChannelSettings(channel: string, state: string) {
-		let exists = await this.channelExists(channel);
-		if (exists) {
-			await ChannelSettings.updateOne({channel: channel}, {method: state}).exec();
-		} else {
-			(new ChannelSettings({
-				channel: channel,
-				method: state
-			})).save();
-		}
-		return state;
+	/**
+	 * 
+	 * @param channel the channel whose draw method is being set
+	 * @param method 
+	 */
+	public async setDrawMethod(channel: string, method: DrawType): Promise<void> {
+		this.makeChannelExist(channel, method);
+		await ChannelSettings.updateOne({channel: channel}, {method: method}).exec();
 	}
 	
-	public async makeChannelExist(channel: string) {
+	/**
+	 * Makes a channel exist if one doesn't exist by the provided name already
+	 * @param channel the channel whose settings don't exist but should
+	 * @param method the method of queueing the channel should use
+	 * @param prefix the command prefix the channel should use
+	 */
+	public async makeChannelExist(channel: string, method?: DrawType, prefix?: string) {
 		let exists = await this.channelExists(channel);
 		if (!exists) {
 			(new ChannelSettings({
 				channel: channel,
-				method: "random"
+				method: method ? method : "random",
+				prefix: prefix ? prefix : "!"
 			})).save();
 		}
 	}
 
+	/**
+	 * Gets the settings of a channel
+	 * @param channel the channel to get the settings of
+	 * @returns a channel settings object
+	 */
 	public async getChannelSettings(channel: string): Promise<ChannelSettingsType> {
+		await this.makeChannelExist(channel);
 		return (await ChannelSettings.findOne({channel: channel}).lean().exec()) as any as ChannelSettingsType;
 	}
 
+	/**
+	 * Checks if a channel exists
+	 * @param channel the channel whose existence is being checked
+	 * @returns true if the channel exists
+	 */
 	private async channelExists(channel: string): Promise<boolean> {
 		return (await ChannelSettings.countDocuments({channel: channel}).exec()) === 1;
 	}
@@ -98,9 +116,9 @@ export default class PriorityDB {
 	public async addPriority(twitchid: string, channel: string, amount?: number): Promise<number> {
 		let chatUser = await this.getUser(twitchid, channel, true);
 		let priority = (chatUser.toObject() as any).priorityPoints;
-		// increment the user's star total for the specified color by one
+		
 		priority += amount ? amount : 1;
-		// update the user's star count in the database
+
 		await User.findByIdAndUpdate(chatUser.id, { priorityPoints: priority });
 		return priority;
 	}
@@ -132,8 +150,36 @@ export default class PriorityDB {
 		return (await User.updateOne({
 				twitchid: twitchid,
 				channel: channel.toLowerCase()
-			}, {priorityPoints: 0}).exec()).nModified > 0;
+			}, {
+				priorityPoints: 0
+			}).exec()).modifiedCount > 0;
 	}
+
+	/**
+	 * Sets the string that precedes and indicates commands for a channel
+	 * @param channel the channel on which whose prefix is being changed
+	 * @param prefix the new prefix
+	 */
+	public async setPrefix(channel: string, prefix: string): Promise<boolean> {
+		return (await ChannelSettings.updateOne({
+			channel: channel
+		}, {
+			prefix: this.sanitizeRegex(prefix)
+		}).exec()).modifiedCount > 0;
+	}
+	private sanitizeRegex(string: string) {
+		return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+	}
+
+	/**
+	 * Gets a channel's command prefix
+	 * @param channel the channel whose prefix is being fetched
+	 * @returns the channel's prefix
+	 */
+	public async getPrefix(channel: string): Promise<string> {
+		return (await ChannelSettings.findOne({channel: channel}).exec() as ChannelSettingsType).prefix;
+	}
+
 
 	public async sortOutPriorities(channel: string, giveList: string[], resetList: string[]): Promise<boolean> {
 		for (let receiver of giveList) {

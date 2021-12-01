@@ -56,7 +56,7 @@ export default class Queue {
 			priority: user.badges ? "subscriber" in user.badges || "founder" in user.badges : false
 		});
 		// the user is queued (no repeats)
-		if (!this.drawn[channel].includes(user["user-id"]) && !this.queued[channel].includes(user["user-id"])) {
+		if (/*!this.drawn[channel].includes(user["user-id"]) &&*/ !this.queued[channel].includes(user["user-id"])) {
 			this.queued[channel].push(user["user-id"]);
 		}
 		return true;
@@ -93,7 +93,9 @@ export default class Queue {
 			let qdex = this.queued[channel].indexOf(winner.twitchid);
 			if (qdex >= 0) {
 				this.queued[channel].splice(qdex, 1);
-				this.drawn[channel].push(winner.twitchid);
+				if (!this.drawn[channel].includes(winner.twitchid)) {
+					this.drawn[channel].push(winner.twitchid);
+				}
 			}
 		}
 		return chosenOnes;
@@ -130,17 +132,12 @@ export default class Queue {
 	/**
 	 * Forcibly removes a user from queue by twitch id
 	 * @param channel the channel the queue is for
-	 * @param userid the user being removed from queue
+	 * @param username the username of the person being removed from queue
 	 * @returns true if the user was removed, false if the user couldn't be removed
 	 */
-	public removeUser(channel: string, userid: string): boolean {
+	public removeUser(channel: string, username: string): boolean {
 		for(let i = 0; i < this.queue[channel].length; i++) {
-			if (this.queue[channel][i].twitchid === userid) {
-				// prevents the user from receiving priority points (bad user)
-				let index = this.queued[channel].indexOf(userid);
-				if (index >= 0) this.queued[channel].splice(index, 1);
-				this.drawn[channel].push(userid);
-
+			if (this.queue[channel][i].user.toLowerCase() === username.toLowerCase()) {
 				this.queue[channel].splice(i, 1);
 				return true;
 			}
@@ -189,9 +186,9 @@ export default class Queue {
 	 */
 	public toString(channel: string): string {
 		if (this.queue[channel].length === 0) {
-			return "Queue is empty!";
+			return "Pool is empty!";
 		}
-		return `Queue (${this.queue[channel].length}): ${this.queue[channel].map(u=>u.user).join(" ")}`;
+		return `Pool (${this.queue[channel].length}): ${this.queue[channel].map(u=>u.user).join(" ")}`;
 	}
 }
 
