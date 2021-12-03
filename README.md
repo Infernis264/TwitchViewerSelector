@@ -1,7 +1,6 @@
-  
-# Twitch Viewer Chooser
+# Twitch Viewer Selector
 
-An IRC chatbot that stores a list of viewers on a Twitch stream and allows their names to be drawn in three ways: the order chatters joined, randomly, and weighted randomly.
+An IRC chatbot that stores a list of viewers on a Twitch stream and allows their names to be drawn in three ways: the order chatters joined the list, randomly, and randomly weighted.
 
 ## How weighted randomness works
 
@@ -21,7 +20,7 @@ Viewers earn priority points in these ways:
 When a user is drawn from the pool, **their priority points are reset to 0 if they aren't subbed and 1 if they are**. Viewers that have been drawn since the `open` command was used will be **ineligible** for earning priority points from the `close` command. This makes it easier for those who join frequently and don't get drawn unlikely to go undrawn for long periods of time.  
 ## Command Reference
 ### Prefix Command:
-All commands use a prefix before their command name which can be set with the `prefix` command. The default prefix is an exclamation point: `!`
+All commands use a prefix before their command name which can be set with the `prefix` command. The default prefix is an exclamation point.
 
 `prefix [new prefix]` - Sets the string that will precede commands for your channel. 
 
