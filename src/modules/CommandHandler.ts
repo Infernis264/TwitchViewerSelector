@@ -14,15 +14,17 @@ export enum Command {
 	REMOVE_USER = "remove",
 	CHANGE_MODE = "use",
 	PRIORITY_CHECK = "pp",
-	CHANGE_PREFIX = "prefix"
+	CHANGE_PREFIX = "prefix",
+	INFO = "howtouse"
 }
 
 export default class CommandHandler {
 
-	public static ENABLED = ["join","leave","draw","pool","open","close","remove","use","pp","prefix"];
+	public static ENABLED = ["join","leave","draw","pool","open","close","remove","use","pp","prefix","howtouse"];
 	public static EXEMPT = [
 		Command.OPEN_QUEUE, Command.PRIORITY_CHECK, 
-		Command.CHANGE_MODE, Command.CHANGE_PREFIX
+		Command.CHANGE_MODE, Command.CHANGE_PREFIX,
+		Command.INFO
 	];
 
 	private channels: string[];
@@ -137,6 +139,8 @@ export default class CommandHandler {
 					return `Changed prefix to "${this.prefixes[channel]}"`;
 				}
 			break;
+			case Command.INFO:
+				return "Command reference over at: https://github.com/Infernis264/TwitchViewerSelector#twitch-viewer-selector";
 		}
 	}
 	
