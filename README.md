@@ -1,46 +1,44 @@
 
-# Simple Queue Bot
+# Twitch Viewer Chooser
 
-  
+An IRC chatbot that stores a list of viewers on a Twitch stream and allows their names to be drawn in three ways: the order chatters joined, randomly, and weighted randomly.
 
-This is an IRC chatbot that stores a queue of viewers on a Twitch stream, and allows them to be drawn in a weighted random order.
-  
+## How weighted randomness works
 
-## How queue priority works
-
-The formerly sub-luck weighted random queue has been reworked in an effort to make drawing names more equitable for all viewers. The new method of queuing is opt-in and can be changed to the new one with the broadcaster only command `!use priority` and to the old with `!use random`.
-
-In priority queuing mode, people earn priority points that give them a higher chance of being drawn from the queue. One priority point is equivalent to an extra entry into the queue, which in turn makes it more likely for a viewer to be drawn if they have more points. 
+In the case that there is too many people to draw during one stream, streamers can use weighted-random drawing to give everyone a chance to be drawn across multiple uses of the bot. Each time the pool is closed while weighted-random drawing is active, undrawn viewers who are still in the pool earn priority points that give them more weight to be drawn in the future. One priority point is equivalent to an extra "person" in the pool, which means that if a viewer has 12 priority points, it is as if 12 *extra* copies of them are placed in the pool. This would make it so that someone with 0 priority points gets only *one* entry and no *bonus* entries from priority points. In this example the first viewer gets 13 total entries versus the second only getting 1 entry, making it very likely that the first viewer will get drawn. When a viewer *is* drawn, their priority points are reset to zero, allowing those who aren't drawn multiple times more and more likely to be drawn.
 
 ---
 Viewers earn priority points in these ways:
 
-1. Being a subscriber to the channel (1 persistent point)
+1. Being a subscriber to the channel (1 persistent priority point)
 
-3. Having joined the queue with `!join` and not getting drawn by the time the `!stopqueue` command is used (+3 temporary priority points)
+2. Having joined the pool with the `join` command and not getting drawn by the time the `close` command is used (+3 temporary priority points)
 ---
-When a user is drawn from the queue, **their priority points are reset to 0 if they aren't subbed and 1 if they are**. Viewers that have been drawn since the `!startqueue` command was used will be ineligible for earning priority points from the `!stopqueue` command. This makes it harder for frequently-queuing and undrawn individuals to go without being drawn for long periods of time.  
+When a user is drawn from the pool, **their priority points are reset to 0 if they aren't subbed and 1 if they are**. Viewers that have been drawn since the `open` command was used will be **ineligible** for earning priority points from the `close` command. This makes it easier for those who join frequently and don't get drawn unlikely to go undrawn for long periods of time.  
 ## Command Reference
-### Queue commands:
-`!join` - Puts the user of the command into the queue
+### Prefixes 
+All commands use a prefix before their command name which can be set with the `prefix` command. The default prefix is an exclamation point: `!`
+`prefix [new prefix]` - Sets the string that will precede commands for your channel. (ex: If the prefix for the channel was `!`, using `!prefix #` would change the prefix to `#` and all further commands would use this word/character to activate (i.e. to change the prefix back to `!`, you would have to run `#prefix !`))
 
-`!leave` - If the user is in the queue, removes them from it
+### Pooling commands:
+`join` - Puts the viewer using the command into the drawing pool
 
-`!queue` - Sends the list of names of people in the queue in the chat
+`leave` - If the viewer using the command is in the pool, removes them from it
+
+`pool` - Sends the list of names of people who are in the pool to the chat
   
+`pp` - Sends the amount of priority points the user using the command has in chat
 
 ### Moderator commands:
-`!draw` - Draws a random person from the queue
+`draw` - Draws a viewer from the pool using the method set by the `use` command
 
-`!startqueue` - Allows regular chat members to use the queue commands and opens up the queue for joining
+`open` - Allows chat members to use the pooling commands to join, leave, and check who's in the pool 
 
-`!stopqueue` - Disallows queue commands, closes the queue, and awards priority points to undrawn users in priority queuing mode
+`close` - Disallows chat members to use pooling commands and awards priority points in weighted-random pooling
 
-`!remove` - Forcibly removes a person from the queue and resets their priority points to zero in priority queuing mode
-  
+`remove [username]` - Forcibly removes a person from the pool but doesn't prevent them from rejoining
 
-### Broadcaster only commands:
-`!use [queue type]` - switches to the specified system for queuing. The three types are as follows:
-1) `priority` - Uses accumulated priority points to weight a queue in favor of those that are drawn less frequently between separate opening and closing of queues
-2) `random` - Selects users randomly with weight added to subscribers of the channel
-3) `order` - The simplest method, draws people in the order they entered queue
+`use [drawing type]` - switches to the specified system for pooling. The three types are as follows:
+1) `priority` - Uses accumulated priority points to weight drawing in favor of those who aren't drawn as often across separate pools
+2) `random` - Randomly chooses viewers with an extra entry for those subscribed to the channel
+3) `order` - The simplest method, draws people in the order they entered the pool
