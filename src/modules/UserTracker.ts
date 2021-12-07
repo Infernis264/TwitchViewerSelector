@@ -4,7 +4,7 @@ import {UserAPIResponse, ChannelList} from "./Constants";
 
 export default class UserTracker {
 
-	private static FETCH_INTERVAL = 10 * 60 * 1000;
+	private static FETCH_INTERVAL = 15 * 60 * 1000;
 	private static MIN_SIMILARITY = 0.7;
 	private channels: string[];
 	private channelList: ChannelList;
@@ -22,6 +22,7 @@ export default class UserTracker {
 		this.populateLists();
 		setInterval(this.populateLists.bind(this), UserTracker.FETCH_INTERVAL);
 	}
+
 	private async populateLists() {
 		for(let i = 0; i < this.channels.length; i++) {
 			try {
@@ -36,6 +37,7 @@ export default class UserTracker {
 		}
 		this.expiry(this.channelList);
 	}
+
 	/**
 	 * Returns the Channel object with the given name
 	 * @param channel the twitch channel whose users you are checking

@@ -13,6 +13,8 @@ export default class Queue {
 	// stores the people who have queued and gotted drawn
 	private drawn: UserList;
 
+	private willBeRemoved: UserList;
+
 	// this data structure needs to be changed but right now I dont have time
 	private available: AvailableChannel[];
 	private picker: UserPicker;
@@ -35,6 +37,7 @@ export default class Queue {
 				channel: channel,
 				active: false
 			});
+			this.willBeRemoved[channel] = [];
 		}
 		this.picker = new UserPicker(db);
 	}
