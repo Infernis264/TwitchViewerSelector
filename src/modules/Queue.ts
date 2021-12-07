@@ -118,6 +118,7 @@ export default class Queue {
 		}
 		return -1;
 	}
+	
 
 	/**
 	 * Culls users from the queue that aren't in the provided list
@@ -125,10 +126,17 @@ export default class Queue {
 	 * @param list the list of users that can remain in queue
 	 */
 	public removeNotInList(channel: string, list: string[]) {
+		for (let i = 0; i < list.length; i++) {
+			if (this.willBeRemoved[channel].includes(list[i]) && this.queue[channel].findIndex(e=>e.user === list[i])) {
+				
+			}
+			
+		}
+
 		for (let i = 0; i < this.queue[channel].length; i++) {
 			if (!list.includes(this.queue[channel][i].user)) {
-				this.queue[channel].splice(i, 1);
-			}
+					this.queue[channel].splice(i, 1);
+				}
 		}
 	}
 	
