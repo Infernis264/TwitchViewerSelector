@@ -24,6 +24,7 @@ export default class UserTracker {
 	}
 
 	private async populateLists() {
+		let error = false;
 		for(let i = 0; i < this.channels.length; i++) {
 			try {
 				let request = await fetch(`https://tmi.twitch.tv/group/user/${this.channels[i]}/chatters`);
@@ -32,10 +33,12 @@ export default class UserTracker {
 					...data.broadcaster, ...data.moderators, ...data.staff, ...data.admins, ...data.viewers, ...data.vips
 				]
 			} catch(e) {
-				console.log(e);
+				error = true;
 			}
 		}
-		this.expiry(this.channelList);
+		if (!error) {
+			this.expiry(this.channelList);
+		}
 	}
 
 	/**

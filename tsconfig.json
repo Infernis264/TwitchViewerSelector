@@ -3,7 +3,7 @@
 		"outDir": "./build/",
 		"noImplicitAny": true,
 		"module": "commonjs",
-		"target": "ESNEXT"
+		"target": "ES6"
 	},
 	"include": ["./src"],
 	"exclude": [""]

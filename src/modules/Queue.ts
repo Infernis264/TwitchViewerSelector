@@ -126,18 +126,34 @@ export default class Queue {
 	 * @param list the list of users that can remain in queue
 	 */
 	public removeNotInList(channel: string, list: string[]) {
-		for (let i = 0; i < list.length; i++) {
-			if (this.willBeRemoved[channel].includes(list[i]) && this.queue[channel].findIndex(e=>e.user === list[i])) {
-				
+		let inQueueNotInList = this.queue[channel].map(n=>n.user).filter(x => !list.includes(x));
+		let isNowInList = this.willBeRemoved[channel].filter(n => list.includes(n));
+		for (let res of isNowInList) {
+			this.resetRemovalStatus(channel, res);
+		}
+		for (let i = 0; i < inQueueNotInList.length; i++) {
+			if (this.willBeRemoved[channel].includes(inQueueNotInList[i])) {
+				this.removeUser(channel, inQueueNotInList[i]);
+				this.resetRemovalStatus(channel, inQueueNotInList[i]);
+			} else {
+				this.willBeRemoved[channel].push(inQueueNotInList[i]);
 			}
-			
 		}
+	}
 
-		for (let i = 0; i < this.queue[channel].length; i++) {
-			if (!list.includes(this.queue[channel][i].user)) {
-					this.queue[channel].splice(i, 1);
-				}
+	/**
+	 * Removes a user from the queue removal array
+	 * @param channel the channel the user is on
+	 * @param username the username of the person who is being removed
+	 * @returns true if the removal was successful
+	 */
+	private resetRemovalStatus(channel: string, username: string): boolean {
+		let index = this.willBeRemoved[channel].findIndex(n => n === username);
+		if (index >= 0) {
+			this.willBeRemoved[channel].splice(index, 1);
+			return true;
 		}
+		return false;
 	}
 	
 	/**
