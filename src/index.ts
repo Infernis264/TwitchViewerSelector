@@ -20,6 +20,10 @@ const client = new TMI.client({
 });
 
 client.on("message", async (channel: string, user: TMI.ChatUserstate, message: string) => {
+	if (message.toLowerCase() === "@" + Auth.USERNAME) {
+		client.say(channel, `@${user["display-name"]}`);
+		return;
+	}
 	let arg = message.split(" ")[1];
 	let c = channel.replace(/\W/g, "");
 	let command = message.split(" ")[0].match(new RegExp(`(?<=${commands.getPrefix(c)}).+`));
