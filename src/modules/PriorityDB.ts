@@ -14,6 +14,10 @@ const ChannelSettings = mongoose.model("ChannelSettings", new Schema({
 	prefix: String
 }));
 
+const EnabledList = mongoose.model("EnabledChannels", new Schema({
+	channel: String
+}));
+
 export default class PriorityDB {
 
 	public static PRIORITY_WEIGHT = 3;

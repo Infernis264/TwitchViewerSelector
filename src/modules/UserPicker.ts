@@ -23,6 +23,8 @@ export default class RandomSelect {
 				return await this.selectRandomWithSubLuck(list, num);
 			case "order":
 				return await this.selectInOrder(list, num);
+			case "random-nosub":
+				return await this.selectRandomNoSubLuck(list, num);
 			default:
 				return null;
 		}
@@ -63,6 +65,14 @@ export default class RandomSelect {
 		return winners;
 	}
 
+	private selectRandomNoSubLuck(list: QueueUser[], num?: number): QueueUser[] {
+		let winners = [];
+		for (let i = 0; i < num; i++) {
+			winners.push(list[Math.floor(random() * list.length)]);
+		}
+		return winners
+	}
+
 	private selectInOrder(list: QueueUser[], num?: number) {
 		return list.slice(0, num ? num : 1);		
 	}
@@ -87,13 +97,13 @@ class WeightedList {
 	}
 
 	public drawOne(): QueueUser {
-		let rand = Math.floor(this.rand() * this.list.length);
+		let rand = Math.floor(random() * this.list.length);
 		let user = this.list.splice(rand, 1)[0];
 		return user;
 	}
 
-	private rand() {
-		return parseInt(randomBytes(4).toString("hex"), 16) / 0xffffffff;
-	}
+}
 
+function random(): number {
+	return parseInt(randomBytes(4).toString("hex"), 16) / 0xffffffff;
 }

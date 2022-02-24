@@ -6,7 +6,6 @@ import Auth from "./auth/Auth";
 const CHANNELS = Auth.CHANNELS;
 
 // the prefix that differentiates commands
-const PREFIX = "!"
 const commands = new CommandHandler(CHANNELS);
 
 const client = new TMI.client({

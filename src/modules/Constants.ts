@@ -38,4 +38,4 @@ export interface ChannelList {
 	[key: string]: string[];
 }
 export interface UserList extends ChannelList {}
-export type DrawType = "random" | "order" | "priority";
+export type DrawType = "random" | "order" | "priority" | "random-nosub";

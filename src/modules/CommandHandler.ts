@@ -117,6 +117,7 @@ export default class CommandHandler {
 						case "priority":
 						case "random":
 						case "order":
+						case "random-nosub":
 							this.db.setDrawMethod(channel, param);
 							return `Changed drawing type to ${param}!`;
 						default:

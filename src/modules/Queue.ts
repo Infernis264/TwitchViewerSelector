@@ -29,6 +29,7 @@ export default class Queue {
 		this.queued = {};
 		this.drawn = {};
 		this.available = [];
+		this.willBeRemoved = {};
 		for (let channel of channels) {
 			this.queue[channel] = [];
 			this.queued[channel] = [];

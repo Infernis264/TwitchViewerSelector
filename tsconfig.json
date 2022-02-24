@@ -2,8 +2,9 @@
 	"compilerOptions": {
 		"outDir": "./build/",
 		"noImplicitAny": true,
-		"module": "commonjs",
-		"target": "ES6"
+		"module": "CommonJS",
+		"target": "es6",
+		"skipLibCheck": true
 	},
 	"include": ["./src"],
 	"exclude": [""]
