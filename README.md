@@ -46,8 +46,10 @@ Example: If the prefix for the channel was `!`, using `!prefix #` would change t
 
 ### Change drawing mode
 
-`use [drawing type]` - switches to the specified system for pooling. The three types are as follows:
+`use [drawing type]` - Switches to the specified system for pooling. The four types are as follows:
 1) `priority` - Uses accumulated priority points to weight drawing in favor of those who aren't drawn as often across separate pools
 2) `random` - Randomly chooses viewers with an extra entry for those subscribed to the channel
 3) `random-nosub` - The original method, sticks everyone in a list and picks one at random with no weights
 4) `order` - The simplest method, draws people in the order they entered the pool
+
+`poolmode` - Shows the current drawing mode that the bot is using to pick users
