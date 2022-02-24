@@ -15,16 +15,17 @@ export enum Command {
 	CHANGE_MODE = "use",
 	PRIORITY_CHECK = "pp",
 	CHANGE_PREFIX = "prefix",
-	INFO = "howtouse"
+	INFO = "howtouse",
+	POOL_MODE = "poolmode"
 }
 
 export default class CommandHandler {
 
-	public static ENABLED = ["join","leave","draw","pool","open","close","remove","use","pp","prefix","howtouse"];
+	public static ENABLED = ["join","leave","draw","pool","open","close","remove","use","pp","prefix","howtouse","poolmode"];
 	public static EXEMPT = [
 		Command.OPEN_QUEUE, Command.PRIORITY_CHECK, 
 		Command.CHANGE_MODE, Command.CHANGE_PREFIX,
-		Command.INFO
+		Command.INFO, Command.POOL_MODE
 	];
 
 	private channels: string[];
@@ -121,10 +122,14 @@ export default class CommandHandler {
 							this.db.setDrawMethod(channel, param);
 							return `Changed drawing type to ${param}!`;
 						default:
-							return `Invalid drawing type ${param}! Available methods are "priority", "random", and "order"`;
+							return `Invalid drawing type ${param}! Available methods are "priority", "random", "random-nosub", and "order"`;
 					}
 				}
 			break;
+			case Command.POOL_MODE:
+				if (this.hasPermission(user)) {
+					return `Currently using "${(await this.db.getChannelSettings(channel)).method}" pooling!`;
+				}
 			case Command.PRIORITY_CHECK:
 				let bal = await this.db.getUserPriority(user["user-id"], channel);
 				if (bal > 0) {
