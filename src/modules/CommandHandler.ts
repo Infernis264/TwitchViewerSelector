@@ -22,6 +22,13 @@ export enum Command {
 export default class CommandHandler {
 
 	public static ENABLED = ["join","leave","draw","pool","open","close","remove","use","pp","prefix","howtouse","poolmode"];
+	private static EMOJIS = ["🐵","🦝","🐶","🐮","🐺","🐷","🐱","🐗","🦁","🐭","🐯","🐹","🦒","🐰","🦊",
+		"🐻","🐲","🐔","🦄","🐴","🦓","🐸","🐼","🐨","🐒","🦍","🦧","🐩","🐕","🐈","🐅","🐆","🐎","🦌",
+		"🦏","🦛","🐂","🐃","🐄","🐖","🐏","🐑","🐐","🐪","🐁","🐘","🦡","🦨","🦥","🦘","🦙","🐫","🐀",
+		"🦔","🐇","🐿","🦎","🐊","🐢","🐍","🐉","🦕","🦖","🦦","🦈","🐬","🐳","🐋","🐟","🐠","🐡","🦐",
+		"🦑","🐙","🦞","🦀","🦆","🐓","🦃","🦅","🕊","🦢","🦜","🦩","🦚","🦉","🐦","🐧","🐥","🐤","🦇",
+		"🦋","🐌","🐛","🦟","🦗","🐜","🐝","🐞","🦂","🕷"
+	];
 	public static EXEMPT = [
 		Command.OPEN_QUEUE, Command.PRIORITY_CHECK, 
 		Command.CHANGE_MODE, Command.CHANGE_PREFIX,
@@ -59,13 +66,13 @@ export default class CommandHandler {
 					await this.db.createUser(user["user-id"], channel);
 				}
 				return this.queue.join(channel, user) ? 
-					`@${user["display-name"]} joined the pool!` :
-					`@${user["display-name"]} is already in the pool`;
+					`${user["display-name"]} joined the pool!` :
+					`${user["display-name"]} is already in the pool`;
 
 			// Leaves the queue if you are in it
 			case Command.LEAVE_QUEUE:
 				return this.queue.leave(channel, user) ? 
-					`@${user["display-name"]} left the pool` :
+					`${user["display-name"]} left the pool` :
 					null;
 
 			// Logs the queue to the chat
@@ -77,7 +84,7 @@ export default class CommandHandler {
 				if (this.hasPermission(user)) {
 					let winners = await this.queue.selectUsers(channel, parseInt(param));
 					if (winners) {
-						return `@${winners.map(u=>u.user).join(" and @")} ${winners.length > 1 ? "are" : "is"} next in line!`;
+						return `${this.emoji()} @${winners.map(u=>u.user).join(" and @")} ${winners.length > 1 ? "are" : "is"} next in line!`;
 					} else {
 						return parseInt(param) ? 
 							`${param} chatter${parseInt(param) > 1 ? "s" : ""} is too many to draw from the pool` :
@@ -180,5 +187,8 @@ export default class CommandHandler {
 	}
 	public getPrefix(channel: string) {
 		return this.prefixes[channel];
+	}
+	private emoji(): string {
+		return CommandHandler.EMOJIS[Math.floor(Math.random() * CommandHandler.EMOJIS.length)];
 	}
 }
