@@ -1,12 +1,14 @@
 import * as TMI from "tmi.js";
-import CommandHandler, {Command} from "./modules/CommandHandler";
+import CommandHandler, {BaseCommands} from "./modules/CommandHandler";
 import Auth from "./auth/Auth";
 
 // put the channels the bot is enabled on
 const CHANNELS = Auth.CHANNELS;
 
+const DB_NAME = "mongodb://localhost:27017/priority";
+
 // the prefix that differentiates commands
-const commands = new CommandHandler(CHANNELS);
+const commands = new CommandHandler(CHANNELS, DB_NAME);
 
 const client = new TMI.client({
 	connection: {reconnect: true},
@@ -23,12 +25,12 @@ client.on("message", async (channel: string, user: TMI.ChatUserstate, message: s
 		client.say(channel, `@${user["display-name"]}`);
 		return;
 	}
-	let arg = message.split(" ")[1];
-	let c = channel.replace(/\W/g, "");
-	let command = message.split(" ")[0].match(new RegExp(`(?<=${commands.getPrefix(c)}).+`));
+	let arg = message.split(" ").slice(1).join(" ");
+	let chan = channel.replace(/\W/g, "");
+	let command = message.split(" ")[0].match(new RegExp(`(?<=${commands.getPrefix(chan)}).+`));
 	if (command) {
-		if (CommandHandler.ENABLED.includes(command[0] as Command)) {
-			let message = await commands.handle(command[0], user, c, arg);
+		if (CommandHandler.ENABLED.includes(command[0] as BaseCommands)) {
+			let message = await commands.handle(command[0], user, chan, arg);
 			if (message) {
 				client.say(channel, message.toString());
 			}

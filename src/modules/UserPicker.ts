@@ -1,12 +1,22 @@
 import PriorityDB from "./PriorityDB";
 import { randomBytes } from "crypto";
-import {QueueUser, DBUser} from "./Constants";
+import {QueueUser, DBUser} from "./Types";
 
 export default class RandomSelect {
+
 	private db: PriorityDB;
+
 	constructor(db: PriorityDB) {
 		this.db = db;
 	}
+
+	/**
+	 * Chooses num users from a queue using a given channel's method of queuing
+	 * @param channel the twitch channel
+	 * @param list the list of people in queue
+	 * @param num the number of people to draw. default is 1
+	 * @returns the users that were selected
+	 */
 	public async chooseNFrom(channel: string, list: QueueUser[], num?: number ): Promise<QueueUser[]> {
 		if (!num) num = 1;
 		if (num > list.length) return null;
@@ -30,6 +40,13 @@ export default class RandomSelect {
 		}
 	}
 
+	/**
+	 * Draws users from a list using channel points
+	 * @param list the list of people in queue
+	 * @param channel the twitch channel that priority points should be used for
+	 * @param num the number of people to draw
+	 * @returns a list of users that have won
+	 */
 	private async selectRandomWithPriorityQueue(list: QueueUser[], channel: string, num: number): Promise<QueueUser[]> {
 		let winners = [];
 		let weights = await this.db.getUsersInList(channel, list.map(n=>n.twitchid));
@@ -49,6 +66,12 @@ export default class RandomSelect {
 		return winners;
 	}
 
+	/**
+	 * Draw users from a list giving an extra entry for subs
+	 * @param list the list of users to draw from
+	 * @param num the number of users to draw
+	 * @returns a list of users that have won
+	 */
 	private selectRandomWithSubLuck(list: QueueUser[], num?: number): QueueUser[] {
 		let winners = [];
 
@@ -65,6 +88,12 @@ export default class RandomSelect {
 		return winners;
 	}
 
+	/**
+	 * Randomly draw users from a list
+	 * @param list the list of users to draw from
+	 * @param num the number of users to draw
+	 * @returns a list of winners of the draw
+	 */
 	private selectRandomNoSubLuck(list: QueueUser[], num?: number): QueueUser[] {
 		let winners = [];
 		for (let i = 0; i < num; i++) {
@@ -73,11 +102,22 @@ export default class RandomSelect {
 		return winners
 	}
 
+	/**
+	 * Returns the users in the order they joined the list
+	 * @param list the list to draw from 
+	 * @param num the number of users to draw
+	 * @returns the list of winners
+	 */
 	private selectInOrder(list: QueueUser[], num?: number) {
 		return list.slice(0, num ? num : 1);		
 	}
 }
 
+/**
+ * Represents a list with multiple entries per person based on each 
+ * user's priority property, giving them an extra entry if they 
+ * have priority (if they are subbed) and adding any extra provided weights.
+ */
 class WeightedList {
 
 	private list: QueueUser[];
@@ -85,6 +125,7 @@ class WeightedList {
 	constructor(list: QueueUser[], weights?: DBUser[]) {
 		this.list = [];
 		list.forEach(user => {
+			// Give two entries if user has priority
 			let entries = user.priority ? 2 : 1;
 			if (weights) {
 				let weight = weights.find(w => w.twitchid === user.twitchid);
@@ -104,6 +145,9 @@ class WeightedList {
 
 }
 
+/**
+ * Cryptographically secure random number probably
+ */
 function random(): number {
 	return parseInt(randomBytes(4).toString("hex"), 16) / 0xffffffff;
 }

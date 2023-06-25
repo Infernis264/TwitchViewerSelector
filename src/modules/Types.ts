@@ -1,5 +1,6 @@
 export interface DBUser {
 	twitchid: string;
+	username: string;
 	channel: string;
 	priorityPoints: number;
 }
@@ -37,5 +38,9 @@ export interface UserAPIResponse {
 export interface ChannelList {
 	[key: string]: string[];
 }
+export interface QueueMap {
+	[key: string]: Map<string, QueueUser>;
+}
 export interface UserList extends ChannelList {}
+
 export type DrawType = "random" | "order" | "priority" | "random-nosub";

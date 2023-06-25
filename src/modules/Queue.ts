@@ -1,14 +1,16 @@
 import {ChatUserstate} from "tmi.js";
 import PriorityDB from "./PriorityDB";
 import UserPicker from "./UserPicker";
-import {AvailableChannel, QueueUser, QueueList, UserList} from "./Constants";
+import {AvailableChannel, QueueUser, QueueList, UserList, QueueMap} from "./Types";
 
 export default class Queue {
 	
+	// Stores a list of all people that are in line waiting to be drawn
 	private queue: QueueList;
 
-	// stores the people who have queued and not gotten drawn yet
-	private queued: UserList;
+	// Stores a list of all people that have joined the queue at any point
+	// while the queue is open. Only increases in size until the queue is closed.
+	private hasJoinedQueue: QueueMap;
 
 	// stores the people who have queued and gotted drawn
 	private drawn: UserList;
@@ -26,13 +28,13 @@ export default class Queue {
 	 */
 	constructor(channels: string[], db: PriorityDB) {
 		this.queue = {};
-		this.queued = {};
+		this.hasJoinedQueue = {};
 		this.drawn = {};
 		this.available = [];
 		this.willBeRemoved = {};
 		for (let channel of channels) {
 			this.queue[channel] = [];
-			this.queued[channel] = [];
+			this.hasJoinedQueue[channel] = new Map();
 			this.drawn[channel] = [];
 			this.available.push({
 				channel: channel,
@@ -53,16 +55,16 @@ export default class Queue {
 		if (this.getUserPos(channel, user["user-id"]) >= 0) {
 			return false;
 		}
-		this.queue[channel].push({
+		let entry = {
 			twitchid: user["user-id"],
 			user: user.username,
-			// sometimes the user.badges object is null if the user doesn't have any badges
+			// Sometimes the user.badges object is null if the user doesn't have any badges
 			priority: user.badges ? "subscriber" in user.badges || "founder" in user.badges : false
-		});
-		// the user is queued (no repeats)
-		if (/*!this.drawn[channel].includes(user["user-id"]) &&*/ !this.queued[channel].includes(user["user-id"])) {
-			this.queued[channel].push(user["user-id"]);
-		}
+		};
+		// Add the user to the queue
+		this.queue[channel].push(entry);
+		// Mark the user as having joined
+		this.hasJoinedQueue[channel].set(entry.twitchid, entry);
 		return true;
 	}
 
@@ -74,6 +76,7 @@ export default class Queue {
 	 */
 	public leave(channel: string, user: ChatUserstate): boolean {
 		let queuePos = this.getUserPos(channel, user["user-id"]);
+		// If the user is found, remove them from the queue
 		if (queuePos >= 0) {
 			this.queue[channel].splice(queuePos, 1);
 			return true;
@@ -88,19 +91,17 @@ export default class Queue {
 	 * @returns an array of chosen users who have won the drawing
 	 */
 	public async selectUsers(channel: string, num?: number): Promise<QueueUser[]> {
+		// Draw 1 viewer by default
 		num = num > 0 ? num : 1;
+		// Draw only if there are people in the queue
 		if (num > this.queue[channel].length) return null;
+		
 		let chosenOnes = await this.picker.chooseNFrom(channel, this.queue[channel], num);
+
 		for(let winner of chosenOnes) {
 			let index = this.queue[channel].findIndex(u => (u.twitchid === winner.twitchid));
 			this.queue[channel].splice(index, 1);
-			let qdex = this.queued[channel].indexOf(winner.twitchid);
-			if (qdex >= 0) {
-				this.queued[channel].splice(qdex, 1);
-				if (!this.drawn[channel].includes(winner.twitchid)) {
-					this.drawn[channel].push(winner.twitchid);
-				}
-			}
+			this.drawn[channel].push(winner.twitchid);
 		}
 		return chosenOnes;
 	}
@@ -164,6 +165,7 @@ export default class Queue {
 	 * @returns true if the user was removed, false if the user couldn't be removed
 	 */
 	public removeUser(channel: string, username: string): boolean {
+		if (!username) return false;
 		for(let i = 0; i < this.queue[channel].length; i++) {
 			if (this.queue[channel][i].user.toLowerCase() === username.toLowerCase()) {
 				this.queue[channel].splice(i, 1);
@@ -183,7 +185,7 @@ export default class Queue {
 		this.available[index].active = active;
 		if (!active) {
 			this.queue[channel] = [];
-			this.queued[channel] = [];
+			this.hasJoinedQueue[channel] = new Map();
 			this.drawn[channel] = [];
 		}
 	}
@@ -199,12 +201,15 @@ export default class Queue {
 		return false;
 	}
 
-	public getUnchosenViewers(channel: string): string[] {
-		return this.queued[channel];
-	}
-
-	public getChosenViewers(channel: string): string[] {
-		return this.drawn[channel];
+	/**
+	 * Gets a list of viewers that have joined queue but haven't been drawn
+	 * @param channel the channel to get unchosen viewers for
+	 * @returns the list of people that haven't been drawn yet
+	 */
+	public getUnchosenViewers(channel: string): QueueUser[] {
+		return Array.from(this.hasJoinedQueue[channel].values()).filter(x =>
+			!this.drawn[channel].includes(x.twitchid)
+		);
 	}
 	
 	/**

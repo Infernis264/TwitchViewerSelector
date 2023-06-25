@@ -1,6 +1,6 @@
-import * as phin from "phin";
+import fetch from "node-fetch";
 import * as similarity from "similarity";
-import {UserAPIResponse, ChannelList} from "./Constants";
+import {UserAPIResponse, ChannelList} from "./Types";
 
 export default class UserTracker {
 
@@ -27,7 +27,7 @@ export default class UserTracker {
 		let error = false;
 		for(let i = 0; i < this.channels.length; i++) {
 			try {
-				let request = await phin(`https://tmi.twitch.tv/group/user/${this.channels[i]}/chatters`);
+				let request = await fetch(`https://tmi.twitch.tv/group/user/${this.channels[i]}/chatters`);
 				let data = (JSON.parse(request.body.toString()) as UserAPIResponse).chatters;
 				this.channelList[this.channels[i]] = [
 					...data.broadcaster, ...data.moderators, ...data.staff, ...data.admins, ...data.viewers, ...data.vips
