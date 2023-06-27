@@ -22,7 +22,7 @@ const EnabledList = mongoose.model("EnabledChannels", new Schema({
 export default class PriorityDB {
 
 	public static PRIORITY_WEIGHT = 3;
-	public static MAX_PP_ADD = 2000;
+	public static MAX_PP_ADD = 1000000;
 	public db: typeof mongoose;
 
 	/**
