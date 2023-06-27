@@ -1,6 +1,7 @@
 import * as TMI from "tmi.js";
 import CommandHandler, {BaseCommands} from "./modules/CommandHandler";
 import Auth from "./auth/Auth";
+import Mario, {MarioCommands} from "./modules/Mario";
 
 // put the channels the bot is enabled on
 const CHANNELS = Auth.CHANNELS;
@@ -9,6 +10,8 @@ const DB_NAME = "mongodb://localhost:27017/priority";
 
 // the prefix that differentiates commands
 const commands = new CommandHandler(CHANNELS, DB_NAME);
+
+const mario = new Mario(CHANNELS)
 
 const client = new TMI.client({
 	connection: {reconnect: true},
@@ -31,6 +34,12 @@ client.on("message", async (channel: string, user: TMI.ChatUserstate, message: s
 	if (command) {
 		if (CommandHandler.ENABLED.includes(command[0] as BaseCommands)) {
 			let message = await commands.handle(command[0], user, chan, arg);
+			if (message) {
+				client.say(channel, message.toString());
+			}
+		}
+		if (Mario.ENABLED.includes(command[0] as MarioCommands)) {
+			let message = await mario.handle(command[0], user, chan, arg);
 			if (message) {
 				client.say(channel, message.toString());
 			}
