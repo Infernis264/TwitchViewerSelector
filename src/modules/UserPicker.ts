@@ -53,7 +53,7 @@ export default class RandomSelect {
 
 		for (let i = 0; i < num; i++) {
 			// draw a winner from the list
-			let weighted = new BetterWeightedList(list, weights as any as DBUser[]);
+			let weighted = new WeightedList(list, weights as any as DBUser[]);
 			let winner = weighted.drawOne();
 			// remove the winner from the list copy
 			let index = list.findIndex(u => (u.twitchid === winner.twitchid));
@@ -77,7 +77,7 @@ export default class RandomSelect {
 
 		for (let i = 0; i < num; i++) {
 			// draw a winner from the list
-			let weighted = new BetterWeightedList(list);
+			let weighted = new WeightedList(list);
 			let winner = weighted.drawOne();
 			// remove the winner from the list copy
 			let index = list.findIndex(u => (u.twitchid === winner.twitchid));
@@ -118,34 +118,7 @@ export default class RandomSelect {
  * user's priority property, giving them an extra entry if they 
  * have priority (if they are subbed) and adding any extra provided weights.
  */
-/*class WeightedList {
-
-	private list: QueueUser[];
-
-	constructor(list: QueueUser[], weights?: DBUser[]) {
-		this.list = [];
-		list.forEach(user => {
-			// Give two entries if user has priority
-			let entries = user.priority ? 2 : 1;
-			if (weights) {
-				let weight = weights.find(w => w.twitchid === user.twitchid);
-				entries += weight.priorityPoints;
-			}
-			for (let i = 0; i < entries; i++) {
-				this.list.push(user);
-			}			
-		});
-	}
-
-	public drawOne(): QueueUser {
-		let rand = Math.floor(random() * this.list.length);
-		let user = this.list.splice(rand, 1)[0];
-		return user;
-	}
-
-}*/
-
-class BetterWeightedList {
+class WeightedList {
 
 	private list: QueueUser[];
 	private endWeights: number[];
