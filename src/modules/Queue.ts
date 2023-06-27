@@ -93,11 +93,10 @@ export default class Queue {
 	public async selectUsers(channel: string, num?: number): Promise<QueueUser[]> {
 		// Draw 1 viewer by default
 		num = num > 0 ? num : 1;
-		// Draw only if there are people in the queue
-		if (num > this.queue[channel].length) return null;
-		
 		let chosenOnes = await this.picker.chooseNFrom(channel, this.queue[channel], num);
-
+		if (chosenOnes === null) {
+			return null;
+		}
 		for(let winner of chosenOnes) {
 			let index = this.queue[channel].findIndex(u => (u.twitchid === winner.twitchid));
 			this.queue[channel].splice(index, 1);

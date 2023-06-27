@@ -1,5 +1,5 @@
 import PriorityDB from "./PriorityDB";
-import { randomBytes } from "crypto";
+import {randomInt} from "crypto";
 import {QueueUser, DBUser} from "./Types";
 
 export default class RandomSelect {
@@ -53,7 +53,7 @@ export default class RandomSelect {
 
 		for (let i = 0; i < num; i++) {
 			// draw a winner from the list
-			let weighted = new WeightedList(list, weights as any as DBUser[]);
+			let weighted = new BetterWeightedList(list, weights as any as DBUser[]);
 			let winner = weighted.drawOne();
 			// remove the winner from the list copy
 			let index = list.findIndex(u => (u.twitchid === winner.twitchid));
@@ -77,7 +77,7 @@ export default class RandomSelect {
 
 		for (let i = 0; i < num; i++) {
 			// draw a winner from the list
-			let weighted = new WeightedList(list);
+			let weighted = new BetterWeightedList(list);
 			let winner = weighted.drawOne();
 			// remove the winner from the list copy
 			let index = list.findIndex(u => (u.twitchid === winner.twitchid));
@@ -97,9 +97,9 @@ export default class RandomSelect {
 	private selectRandomNoSubLuck(list: QueueUser[], num?: number): QueueUser[] {
 		let winners = [];
 		for (let i = 0; i < num; i++) {
-			winners.push(list[Math.floor(random() * list.length)]);
+			winners.push(list[randomInt(list.length)]);
 		}
-		return winners
+		return winners;
 	}
 
 	/**
@@ -118,7 +118,7 @@ export default class RandomSelect {
  * user's priority property, giving them an extra entry if they 
  * have priority (if they are subbed) and adding any extra provided weights.
  */
-class WeightedList {
+/*class WeightedList {
 
 	private list: QueueUser[];
 
@@ -143,11 +143,43 @@ class WeightedList {
 		return user;
 	}
 
-}
+}*/
 
-/**
- * Cryptographically secure random number probably
- */
-function random(): number {
-	return parseInt(randomBytes(4).toString("hex"), 16) / 0xffffffff;
+class BetterWeightedList {
+
+	private list: QueueUser[];
+	private endWeights: number[];
+	private total: number;
+
+	constructor(list: QueueUser[], weights?: DBUser[]) {
+		this.list = list;
+		this.total = 0;
+		this.endWeights = [];
+		for (let user of list) {
+			// Give two entries if user has priority
+			let entries = user.priority ? 2 : 1;
+			if (weights) {
+				let weight = weights.find(w => w.twitchid === user.twitchid);
+				entries += weight.priorityPoints;
+			}
+			this.endWeights.push(entries);
+			this.total += entries;
+		}
+	}
+
+	public drawOne(): QueueUser {
+		let rand = randomInt(this.total);
+		let totalSoFar = 0;
+		for (let i = 0; i < this.endWeights.length; i++) {
+			totalSoFar += this.endWeights[i];
+			if (rand < totalSoFar) {
+				let user = this.list.splice(i, 1)[0];
+				let userWeight = this.endWeights.splice(i, 1)[0];
+				this.total -= userWeight;
+				user.pp = userWeight;
+				return user;
+			}
+		}
+		return null;
+	}
 }

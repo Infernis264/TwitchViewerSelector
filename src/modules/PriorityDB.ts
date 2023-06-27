@@ -1,6 +1,6 @@
 import { Document, Schema, LeanDocument } from "mongoose";
 import * as mongoose from "mongoose";
-import { ChannelSettingsType, DBUser, DrawType, QueueUser } from "./Types";
+import { ChannelSettingsType, DBUser, DrawType, DrawTypeArr, QueueUser } from "./Types";
 
 const User = mongoose.model("User", new Schema({
 	twitchid: String,
@@ -40,10 +40,15 @@ export default class PriorityDB {
 	 * Sets the drawing mode for a channel
 	 * @param channel the channel whose draw method is being set
 	 * @param method the drawing method that should be used for the channel
+	 * @returns true if operation was successful, false otherwise
 	 */
-	public async setDrawMethod(channel: string, method: DrawType): Promise<void> {
-		this.makeChannelExist(channel, method);
+	public async setDrawMethod(channel: string, method: DrawType): Promise<boolean> {
+		if (DrawTypeArr.includes(method)) {
+			return false;
+		}
+		await this.makeChannelExist(channel, method);
 		await ChannelSettings.updateOne({channel: channel}, {method: method}).exec();
+		return true;
 	}
 
 	/**

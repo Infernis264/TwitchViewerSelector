@@ -2,7 +2,7 @@ import * as TMI from "tmi.js";
 import UserTracker from "./UserTracker";
 import Queue from "./Queue";
 import PriorityDB from "./PriorityDB";
-import {ChannelList} from "./Types";
+import {ChannelList, DrawType, DrawTypeArr} from "./Types";
 
 export enum BaseCommands {
 	JOIN_QUEUE = "join",
@@ -87,17 +87,21 @@ export default class CommandHandler {
 				return this.queue.toString(channel);
 
 			// Draws a random winner from the queue
-			case BaseCommands.DRAW_USER:
+			case BaseCommands.DRAW_USER:				
 				if (this.hasPermission(user)) {
-					let winners = await this.queue.selectUsers(channel, parseInt(param));
+					// By default, draw one person if no parameter specified
+					let numDraw = param !== "" ? parseInt(param) : 1;
+					if (numDraw < 1 || isNaN(numDraw)) {
+						return `"${param}" isn't a number!`;
+					}
+					let winners = await this.queue.selectUsers(channel, numDraw);
 					if (winners) {
-						return `${this.emoji()} @${winners.map(u=>u.user).join(" and @")} ${winners.length > 1 ? "are" : "is"} next in line!`;
+						return `${this.emoji()} @${winners.map(u=>`${u.user}${u.pp ? ` (${u.pp} pp)` : ""}`)
+							.join(" and @")} ${winners.length > 1 ? "are" : "is"} next in line!`;
 					} else {
-						return parseInt(param) ? 
-							`${param} chatter${parseInt(param) > 1 ? "s" : ""} is too many to draw from the pool` :
-							param === undefined ? 
-								`Pool is empty!` :
-								`${param} isn't a number!`;
+						return numDraw === 1 ? 
+							`Pool is empty!` : 
+							`${numDraw} chatters is too many to draw from the pool!`;
 					}
 				}
 			break;
@@ -127,17 +131,15 @@ export default class CommandHandler {
 			break;
 			case BaseCommands.CHANGE_MODE:
 				if (this.hasPermission(user)) {
-					param = param ? param.toLowerCase() : param;
-					switch(param) {
-						case "priority":
-						case "random":
-						case "order":
-						case "random-nosub":
-							this.db.setDrawMethod(channel, param);
-							return `Changed drawing type to ${param}!`;
-						default:
-							return `Invalid drawing type ${param}! Available methods are "priority", "random", "random-nosub", and "order"`;
-					}
+					let success = await this.db.setDrawMethod(channel, param.toLowerCase() as DrawType);
+					if (success) {
+						return `Changed drawing method to ${param}!`;
+					} 
+					return `Invalid drawing method ${
+							param
+						}! Available methods are "${
+							DrawTypeArr.join(`", "`)
+						}"`;
 				}
 			break;
 			case BaseCommands.POOL_MODE:

@@ -17,6 +17,7 @@ export interface QueueUser {
 	twitchid: string;
 	// whether they are a sub or not
 	priority: boolean;
+	pp?: number;
 }
 export interface AvailableChannel {
 	channel: string;
@@ -43,4 +44,6 @@ export interface QueueMap {
 }
 export interface UserList extends ChannelList {}
 
-export type DrawType = "random" | "order" | "priority" | "random-nosub";
+export const DrawTypeArr = ["random", "order", "priority", "random-nosub"] as const;
+
+export type DrawType = typeof DrawTypeArr[number];
