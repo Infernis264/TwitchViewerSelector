@@ -43,7 +43,7 @@ export default class PriorityDB {
 	 * @returns true if operation was successful, false otherwise
 	 */
 	public async setDrawMethod(channel: string, method: DrawType): Promise<boolean> {
-		if (DrawTypeArr.includes(method)) {
+		if (!DrawTypeArr.includes(method)) {
 			return false;
 		}
 		await this.makeChannelExist(channel, method);

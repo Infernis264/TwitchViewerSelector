@@ -96,8 +96,13 @@ export default class CommandHandler {
 					}
 					let winners = await this.queue.selectUsers(channel, numDraw);
 					if (winners) {
-						return `${this.emoji()} @${winners.map(u=>`${u.user}${u.pp ? ` (${u.pp} pp)` : ""}`)
-							.join(" and @")} ${winners.length > 1 ? "are" : "is"} next in line!`;
+						if ((await this.db.getChannelSettings(channel)).method === "priority") {
+							return `${this.emoji()} @${winners.map(u => `${u.user}${u.pp ? ` (${u.pp} pp)` : ""}`)
+								.join(" and @")} ${winners.length > 1 ? "are" : "is"} next in line!`;
+						} else {
+							return `${this.emoji()} @${winners.map(u => u.user).join(" and @")
+								} ${winners.length > 1 ? "are" : "is"} next in line!`;
+						}
 					} else {
 						return numDraw === 1 ? 
 							`Pool is empty!` : 
@@ -113,6 +118,7 @@ export default class CommandHandler {
 						await this.db.giveOutPriorityPoints(channel, this.queue.getUnchosenViewers(channel));
 					}
 				}
+			// INTENDED CASE FALLTHROUGH
 			// the following code runs for both both closing and opening
 			case BaseCommands.OPEN_QUEUE:
 				if (this.hasPermission(user)) {
@@ -147,6 +153,12 @@ export default class CommandHandler {
 					return `Currently using "${(await this.db.getChannelSettings(channel)).method}" pooling!`;
 				}
 			case BaseCommands.PRIORITY_CHECK:
+				if ((await this.db.getChannelSettings(channel)).method !== "priority") {
+					return;
+				}
+				if (!(await this.db.userExists(user["user-id"], channel))) {
+					await this.db.createUser(user["user-id"], user["username"], channel);
+				}
 				let bal;
 				let toUser = `${user["display-name"]} has`;
 				if (this.hasPermission(user) && param) {
@@ -159,10 +171,10 @@ export default class CommandHandler {
 					bal = await this.db.getPriorityById(channel, user["user-id"]);
 				}
 				// Replace 0 priority points with "no priority points"
-				if (bal === 0) bal = "no";
+				if (!bal) bal = "no";
 
 				// user has x priority points
-				return `${toUser} ${bal} priority points`;
+				return `${toUser} ${bal} priority point${bal === 1 ? "" : "s"}`;
 			break;
 			case BaseCommands.CHANGE_PREFIX:
 				if (this.hasPermission(user)) {
